@@ -13,9 +13,7 @@ formatter = logging.Formatter(logFormat)
 handler.setFormatter(formatter)
 root.addHandler(handler)
 
-# Fallback config
-logging.basicConfig(stream=sys.stdout, level=logging.DEBUG, format=logFormat)
-
 
 # Global constants
-DATA_FOLDER = os.path.join(os.path.dirname(__file__), "../datasets")
+DATA_FOLDER = os.path.abspath(os.path.join(os.path.dirname(__file__), "../datasets"))
+PROCESSED_FOLDER = os.path.join(DATA_FOLDER, "processed")
