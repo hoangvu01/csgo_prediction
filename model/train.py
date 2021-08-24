@@ -3,8 +3,15 @@ import logging
 import itertools
 import pandas as pd
 
+from sklearn.svm import SVC
+from sklearn.multiclass import OneVsRestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import average_precision_score
+
+from joblib import dump, load
+
 from model import DATA_FOLDER
-from model.loader import load_df_from_csv, save_processed_data, load_processed_data
+from model.loader import load_df_from_csv, save_processed_data, load_processed_data, save_model
 
 logger = logging.getLogger(__name__)
 
@@ -94,9 +101,33 @@ def pad_rounds_with_zeros(df):
     return rounds_df
 
 def train(clean_slate=True):
-    df = import_dataset() if clean_slate else load_processed_data()
+    df = import_dataset() if clean_slate else load_processed_data(filename="prep_data")
     filter_dataset(df, min_rank=20)
     df = pad_rounds_with_zeros(df)
 
-    save_processed_data(df)
+    save_processed_data(df, "prep_data")
+    
+    clf = SVC(verbose=True)
 
+    model_inputs = df.iloc[:, :-1]
+    model_outputs = df['round_winner']
+    
+    X_train, X_test, y_train, y_test = train_test_split(model_inputs, model_outputs, 
+                                                        test_size=0.80, random_state=42)
+    
+    logger.info("Data preprocessing completed")
+    logger.info("Beginning training...")
+    model = clf.fit(X_train, y_train)
+
+    save_model(model, "clf")
+
+    logger.info("Training complete, testing...")
+    y_prediction = model.predict(X_test)
+    
+    logger.info("Testing complete, analysing result...") 
+    avg_score = average_precision_score(y_test, y_prediction)
+    logger.info(f"Accuracy: {avg_score}")
+
+    results_df = pd.DataFrame(y_train)
+    results_df["prediction"] = pd.Series(y_prediction)
+    save_processed_data(y_df, filename="results") 

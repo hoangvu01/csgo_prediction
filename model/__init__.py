@@ -17,3 +17,5 @@ root.addHandler(handler)
 # Global constants
 DATA_FOLDER = os.path.abspath(os.path.join(os.path.dirname(__file__), "../datasets"))
 PROCESSED_FOLDER = os.path.join(DATA_FOLDER, "processed")
+MODEL_FOLDER = os.path.abspath(os.path.join(os.path.dirname(__file__), "../out"))
+
