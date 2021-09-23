@@ -1,11 +1,11 @@
 ## CS:GO Round Outcome Prediction
 
-This is [hoangvu01's](https://github.com/hoangvu01) fun summer project aimming to:
+This is [hoangvu01's](https://github.com/hoangvu01) fun summer project aiming to:
 - Gather data from [HLTV](https://www.hltv.org/)
 - Clean, aggregate data and define new metrics
 - Predict the winner of each round based on each team's economy and total equipment values at the beginning of the round
 
-### The Game
+### 🎮 The Game
 `Counter Strike: Global Offensive` is a _Tactical First Person Shooter (Tactical FPS)_ video game
 where 2 opposing forces, the _Terroists (Ts)_ and _Counter-Terroists (CTs)_, go against each other.
 
@@ -22,7 +22,7 @@ At the end of each round, each team get a certain amount of cash, determined by
 how many round wins/losses they have had. This money can then used to purchase
 weapons, grenades, armour and more... which we often call `team economy`. 
 
-### Data
+### 💾 Data
 There are 2 sources of data for this project, the first set of data had been collected and 
 [published on Kaggle](https://www.kaggle.com/austinpack/cs-go-esports-analysis/data) by 
 [Austin Pack](https://www.kaggle.com/austinpack) for public usage. 
@@ -31,8 +31,28 @@ However, I have also written my own Python Module which is an unofficial HLTV AP
 used for collecting historical matches data including overall scores, map picks, 
 team economies and more. You can check out the project [here](https://github.com/hoangvu01/hltv_python).
 
-### Experiment
+### 🧫 Experiment
 
+Data is first transformed into the following format:
+
+Column | Description
+-------|------------
+team_1_id | Unique identifier for team 1
+team_2_id | Unique identifier for team 2
+rank_1 | Team 1 HLTV Rank at the time of the match-up
+rank_2 | Team 2 HLTV Rank  at the time of the match-up
+best_of | Number of maps in the series `1/3/5`
+map_id | Name of the map `de_dust2/de_mirage/etc...`
+starting_ct | Which team starts on CTs side first
+t1_score | Number of rounds team 1 has won
+t2_score | Number of rounds team 2 has won
+t1_equipment | Total value of equipment for team 1 before round starts
+t2_equipment | Total value of equipment for team 2 before round starts
+**round_winner** | Which team has won the round - ultimate goal to predict
+
+
+
+Below is the result of running `model.train.train_multi_model()`:
 
 Model | Details | Training / Test Set Ratio | Accuracy with Training Data | Accuracy with Test Data 
 ------|---------|---------------------------|-----------------------------|------------------------
@@ -53,7 +73,7 @@ Random Forest | `RandomForestClassifier(max_depth=5, n_estimators=10, max_featur
 Random Forest | `RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1)` | 30:70 | 0.6087195077904066| 0.5987261796207715
 Neural Net | `MLPClassifier(alpha=1, max_iter=1000)` | 70:30 | 0.5951849578222274| 0.5961346910186581
 Neural Net | `MLPClassifier(alpha=1, max_iter=1000)` | 50:50 | 0.6192380044563555| 0.6196964613961038
-Neural Net | `MLPClassifier(alpha=1, max_iter=1000)` | 30:70 | 0.515330894175279 | 0.5146073359897259Neural Net | `MLPClassifier(alpha=1, max_iter=1000)` | 70:30 | 0.5951849578222274| 0.5961346910186581
+Neural Net | `MLPClassifier(alpha=1, max_iter=1000)` | 30:70 | 0.515330894175279 | 0.5146073359897259
 AdaBoost | `AdaBoostClassifier()` | 70:30 | 0.6119837046189645| 0.6141008882015485
 AdaBoost | `AdaBoostClassifier()` | 50:50 | 0.6192619063155188| 0.6084604924337447
 AdaBoost | `AdaBoostClassifier()` | 30:70 | 0.6189462043236207| 0.610070374044156
