@@ -70,24 +70,25 @@ def train_multi_model():
     # Select only required columns
     df = df[
         ['team_1_id', 'team_2_id', 'rank_1', 'rank_2', 'best_of', 'map_id', 'ct_team',
-         't1_score', 't2_score', 't1_equipment', 't2_equipment', 'round_winner']
+         't1_score', 't2_score', 't1_equipment', 't2_equipment', 't1_streak', 't2_streak', 'round_winner']
     ]
 
     save_processed_data(df, "prep_data")
 
-    classifier_names = ["Nearest Neighbors", "Linear SVM", "RBF SVM",
-                        "Decision Tree", "Random Forest", "Neural Net", 
-                        "AdaBoost", "Naive Bayes", "QDA"]
+    classifier_names = ["Nearest Neighbors",
+                        "Decision Tree", "Random Forest", "Neural Net",
+                        "AdaBoost", "Naive Bayes", "QDA",
+                        "Linear SVM", "RBF SVM"]
     classifiers = [
-        KNeighborsClassifier(5),
-        SVC(kernel="linear", C=0.025),
-        SVC(gamma=2, C=1),
-        DecisionTreeClassifier(max_depth=5),
-        RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1),
+        KNeighborsClassifier(10),
+        DecisionTreeClassifier(max_depth=10),
+        RandomForestClassifier(max_depth=10, n_estimators=10, max_features=10),
         MLPClassifier(alpha=1, max_iter=1000),
         AdaBoostClassifier(),
         GaussianNB(),
-        QuadraticDiscriminantAnalysis()
+        QuadraticDiscriminantAnalysis(),
+        SVC(kernel="linear", C=0.025),
+        SVC(gamma=2, C=1),
     ]
     classifier_res = []
 

@@ -1,12 +1,13 @@
-import os
-import logging
 import itertools
+import logging
+import os
 import pandas as pd
 
 from model import DATA_FOLDER
 from model.loader import load_df_from_csv
 
 logger = logging.getLogger(__name__)
+
 
 def create_teams_csv():
     results_path = os.path.abspath(os.path.join(DATA_FOLDER, "results.csv"))
@@ -17,8 +18,8 @@ def create_teams_csv():
 
     # Combines the columns to get TEAM and RANK
     teams_df = pd.concat([
-        results_df[['date', 'team_1', 'rank_1']], 
-        results_df[['date', 'team_2', 'rank_2']]    
+        results_df[['date', 'team_1', 'rank_1']],
+        results_df[['date', 'team_2', 'rank_2']]
     ])
 
     # Cleanup redundant and/or empty columns
@@ -48,14 +49,15 @@ def create_teams_csv():
     logger.info(f'Writing results to {output_path}')
     teams_df.to_csv(output_path)
     logger.info(f'Write operation to {output_path} completed')
-   
+
+
 def create_maps_csv():
     results_path = os.path.abspath(os.path.join(DATA_FOLDER, "results.csv"))
     results_df = pd.read_csv(results_path)
 
     # Create unique ID for each map 
     maps = set(results_df['_map'].tolist())
-    maps_id = [ [k, v] for k,v in zip(maps, range(len(maps))) ]
+    maps_id = [[k, v] for k, v in zip(maps, range(len(maps)))]
     maps_df = pd.DataFrame(maps_id, columns=['map', 'map_id'])
     maps_df.set_index('map_id', inplace=True)
 
@@ -156,6 +158,7 @@ def split_economy_into_rounds(df):
     logger.info("Successfully create rounds data from whole game economy")
     return rounds_df
 
+
 def create_custom_features(df):
     winner_cols = [f"{i}_winner" for i in range(1, 31)]
     winners = df[winner_cols]
@@ -170,13 +173,16 @@ def create_custom_features(df):
 
     return df
 
+
 def label_ct(row):
     if row["t1_score"] + row["t2_score"] > 15:
         return 3 - row["starting_ct"]
     return row["starting_ct"]
 
+
 def current_score(row, team_number):
     return len([i for i in row.tolist() if i == team_number])
+
 
 def current_streak(row, team_number):
     row_list = row.tolist()
