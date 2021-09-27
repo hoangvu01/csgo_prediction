@@ -3,6 +3,7 @@ import logging
 import os
 import pandas as pd
 from joblib import dump, load
+
 from sklearn.datasets import make_moons, make_circles, make_classification
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
@@ -18,113 +19,10 @@ from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 
 from model import DATA_FOLDER
+from model.data import import_dataset, filter_dataset, split_economy_into_rounds, create_custom_features
 from model.loader import load_df_from_csv, save_processed_data, load_processed_data, save_model
 
 logger = logging.getLogger(__name__)
-
-
-def import_dataset():
-    teams_df = load_df_from_csv(os.path.join(DATA_FOLDER, 'teams.csv'))
-    economy_df = load_df_from_csv(os.path.join(DATA_FOLDER, 'economy.csv'))
-    results_df = load_df_from_csv(os.path.join(DATA_FOLDER, 'results.csv'))
-    maps_df = load_df_from_csv(os.path.join(DATA_FOLDER, 'maps.csv'))
-
-    # Inner join the 2 dataframes
-    match_df = pd.merge(
-        economy_df,
-        results_df,
-        how='inner',
-        on=['match_id', 'event_id', 'team_1', 'team_2', '_map']
-    )
-    match_df.fillna(0, inplace=True)
-
-    # Fill in TEAM ID for team_1
-    teams_df = teams_df[['team_id', 'team']]
-    match_df = pd.merge(match_df, teams_df, how='inner',
-                        left_on='team_1', right_on='team')
-    match_df = match_df.rename(columns={'team_id': 'team_1_id'})
-    match_df = match_df.drop(columns=['team'])
-
-    # Fill in TEAM ID for team_2
-    teams_df = teams_df[['team_id', 'team']]
-    match_df = pd.merge(match_df, teams_df, how='inner',
-                        left_on='team_2', right_on='team')
-    match_df = match_df.rename(columns={'team_id': 'team_2_id'})
-    match_df = match_df.drop(columns=['team'])
-
-    # Replace MAP with MAP_ID
-    match_df = pd.merge(match_df, maps_df, how='inner',
-                        left_on='_map', right_on='map')
-
-    # Drop unneccesary columns
-    match_cols = ['team_1_id', 'team_2_id', 'rank_1', 'rank_2', 'best_of', 'map_id', 'starting_ct']
-    round_cols = list(itertools.chain.from_iterable(
-        [[f'{i}_t1', f'{i}_t2', f'{i}_winner'] for i in range(1, 31)]
-    ))
-    match_df = match_df[match_cols + round_cols]
-
-    # Set types for data
-    # Filter invalid 'best_of' values
-    match_df = match_df.loc[match_df['best_of'] != 'o']
-    match_df.astype('int32')
-    match_df.index.title = 'id'
-
-    return match_df
-
-
-def filter_dataset(df, min_rank=30, best_of=None):
-    df = df[(df.rank_1 < min_rank) & (df.rank_2 < min_rank)]
-
-    if not (best_of is None):
-        df = df[df.best_of == best_of]
-
-    return df
-
-
-def split_economy_into_rounds(df):
-    logger.info("Augmenting data by serialising round economy...")
-
-    columns = list(df) + ['round_winner']
-    rounds_df = pd.DataFrame(columns=list(df))
-    total_cols = len(df.columns)
-    round_cols = 90
-    match_cols = total_cols - round_cols
-
-    for i in range(30, 0, -1):
-        logger.info(f"Creating data for the {i} round.")
-
-        # All rounds plated in the game with round winner and economy
-        cur_rounds = df.loc[df[f'{i}_winner'] > 0, :].copy()
-
-        # Append the current round winner to the last column
-        cur_rounds['round_winner'] = cur_rounds[f"{i}_winner"].apply(lambda x: 1 if x == 1 else -1)
-        cur_rounds['t1_equipment'] = cur_rounds[f'{i}_t1']
-        cur_rounds['t2_equipment'] = cur_rounds[f'{i}_t2']
-
-        # Delete the current round winner in column [i_winner]
-        cur_round_col_index = match_cols - 1 + i * 3
-        cur_rounds.iloc[:, cur_round_col_index: total_cols] = 0
-
-        rounds_df = rounds_df.append(cur_rounds, ignore_index=True)
-
-    rounds_df.astype('int32')
-    rounds_df.index.name = 'id'
-
-    winner_cols = [f"{i}_winner" for i in range(1, 31)]
-    winners = rounds_df[winner_cols]
-
-    rounds_df["t1_score"] = winners.apply(lambda row: len([i for i in row.tolist() if i == 1]), axis=1)
-    rounds_df["t2_score"] = winners.apply(lambda row: len([i for i in row.tolist() if i == 2]), axis=1)
-
-    def label_ct(row):
-        if row["t1_score"] + row["t2_score"] > 15:
-            return 3 - row["starting_ct"]
-        return row["starting_ct"]
-
-    rounds_df['ct_team'] = rounds_df.apply(label_ct, axis=1) 
-
-    logger.info("Successfully create rounds data from whole game economy")
-    return rounds_df
 
 
 def train(clf, clf_name, inputs, outputs, clean_slate=True, test_size=0.3):
@@ -167,6 +65,7 @@ def train_multi_model():
     df = import_dataset()
     df = filter_dataset(df, min_rank=20)
     df = split_economy_into_rounds(df)
+    df = create_custom_features(df)
 
     # Select only required columns
     df = df[
@@ -180,7 +79,7 @@ def train_multi_model():
                         "Decision Tree", "Random Forest", "Neural Net", 
                         "AdaBoost", "Naive Bayes", "QDA"]
     classifiers = [
-        KNeighborsClassifier(3),
+        KNeighborsClassifier(5),
         SVC(kernel="linear", C=0.025),
         SVC(gamma=2, C=1),
         DecisionTreeClassifier(max_depth=5),
