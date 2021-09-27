@@ -101,8 +101,6 @@ def split_economy_into_rounds(df):
         cur_rounds['t1_equipment'] = cur_rounds[f'{i}_t1']
         cur_rounds['t2_equipment'] = cur_rounds[f'{i}_t2']
 
-        cur_round_winner = cur_rounds[f'{i}_winner']
-
         # Delete the current round winner in column [i_winner]
         cur_round_col_index = match_cols - 1 + i * 3
         cur_rounds.iloc[:, cur_round_col_index: total_cols] = 0
@@ -117,6 +115,13 @@ def split_economy_into_rounds(df):
 
     rounds_df["t1_score"] = winners.apply(lambda row: len([i for i in row.tolist() if i == 1]), axis=1)
     rounds_df["t2_score"] = winners.apply(lambda row: len([i for i in row.tolist() if i == 2]), axis=1)
+
+    def label_ct(row):
+        if row["t1_score"] + row["t2_score"] > 15:
+            return 3 - row["starting_ct"]
+        return row["starting_ct"]
+
+    rounds_df['ct_team'] = rounds_df.apply(label_ct, axis=1) 
 
     logger.info("Successfully create rounds data from whole game economy")
     return rounds_df
@@ -147,6 +152,7 @@ def train(clf, clf_name, inputs, outputs, clean_slate=True, test_size=0.3):
     results_df = pd.DataFrame(x_test)
     results_df["expected"] = pd.Series(y_test)
     results_df["prediction"] = pd.Series(y_test_prediction)
+
     save_processed_data(results_df, filename=clf_name + "_results_test")
 
     return {
@@ -164,7 +170,7 @@ def train_multi_model():
 
     # Select only required columns
     df = df[
-        ['team_1_id', 'team_2_id', 'rank_1', 'rank_2', 'best_of', 'map_id', 'starting_ct',
+        ['team_1_id', 'team_2_id', 'rank_1', 'rank_2', 'best_of', 'map_id', 'ct_team',
          't1_score', 't2_score', 't1_equipment', 't2_equipment', 'round_winner']
     ]
 
