@@ -1,26 +1,17 @@
-import itertools
 import logging
-import os
-import pandas as pd
-from joblib import dump, load
 
-from sklearn.datasets import make_moons, make_circles, make_classification
+import pandas as pd
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
-from sklearn.gaussian_process import GaussianProcessClassifier
-from sklearn.gaussian_process.kernels import RBF
 from sklearn.metrics import average_precision_score
 from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
-from sklearn.preprocessing import StandardScaler
-from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 
-from model import DATA_FOLDER
 from model.data import import_dataset, filter_dataset, split_economy_into_rounds, create_custom_features
-from model.loader import load_df_from_csv, save_processed_data, load_processed_data, save_model
+from model.loader import save_processed_data, save_model
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +21,7 @@ def train(clf, clf_name, inputs, outputs, clean_slate=True, test_size=0.3):
 
     logger.info("Data preprocessing completed")
     logger.info("Beginning training...")
+    logger.info(f"Model - {clf_name} TestSize - {test_size}")
     model = clf.fit(x_train, y_train)
 
     save_model(model, clf_name)
@@ -70,25 +62,31 @@ def train_multi_model():
     # Select only required columns
     df = df[
         ['team_1_id', 'team_2_id', 'rank_1', 'rank_2', 'best_of', 'map_id', 'ct_team',
-         't1_score', 't2_score', 't1_equipment', 't2_equipment', 't1_streak', 't2_streak', 'round_winner']
+         'map_wins_1', 'map_wins_2', 't1_score', 't2_score', 't1_equipment', 't2_equipment',
+         't1_streak', 't2_streak', 'rating_p1_t1', 'rating_p1_t2', 'rating_p2_t1', 'rating_p2_t2',
+         'rating_p3_t1', 'rating_p3_t2', 'rating_p4_t1', 'rating_p4_t2', 'rating_p5_t1', 'rating_p5_t2',
+         'round_winner']
     ]
 
     save_processed_data(df, "prep_data")
 
+    logger.info(df.columns)
+
     classifier_names = ["Nearest Neighbors",
                         "Decision Tree", "Random Forest", "Neural Net",
                         "AdaBoost", "Naive Bayes", "QDA",
-                        "Linear SVM", "RBF SVM"]
+                        # "Linear SVM", "RBF SVM"
+                        ]
     classifiers = [
-        KNeighborsClassifier(10),
-        DecisionTreeClassifier(max_depth=10),
-        RandomForestClassifier(max_depth=10, n_estimators=10, max_features=10),
+        KNeighborsClassifier(3),
+        DecisionTreeClassifier(max_depth=5),
+        RandomForestClassifier(max_depth=5, n_estimators=10, max_features=2),
         MLPClassifier(alpha=1, max_iter=1000),
         AdaBoostClassifier(),
         GaussianNB(),
         QuadraticDiscriminantAnalysis(),
-        SVC(kernel="linear", C=0.025),
-        SVC(gamma=2, C=1),
+        # SVC(kernel="linear", C=0.025),
+        # SVC(gamma=2, C=1),
     ]
     classifier_res = []
 
