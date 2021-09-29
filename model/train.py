@@ -16,7 +16,7 @@ from model.loader import save_processed_data, save_model
 logger = logging.getLogger(__name__)
 
 
-def train(clf, clf_name, inputs, outputs, clean_slate=True, test_size=0.3):
+def train(clf, clf_name, inputs, outputs, test_size=0.3):
     x_train, x_test, y_train, y_test = train_test_split(inputs, outputs, test_size=test_size)
 
     logger.info("Data preprocessing completed")
@@ -47,7 +47,8 @@ def train(clf, clf_name, inputs, outputs, clean_slate=True, test_size=0.3):
 
     return {
         "classifier": clf_name,
-        "test size": test_size,
+        "training size": len(x_train),
+        "testing size": len(x_test),
         "training set accuracy": y_train_score,
         "test set accuracy": y_test_score
     }
@@ -88,7 +89,6 @@ def train_multi_model():
         # SVC(kernel="linear", C=0.025),
         # SVC(gamma=2, C=1),
     ]
-    classifier_res = []
 
     inputs = df.iloc[:, :-1]
     outputs = df['round_winner']
